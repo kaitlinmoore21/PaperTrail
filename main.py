@@ -11,11 +11,6 @@ from utils_pdf import generate_pdf_bytes, encrypt_and_save_pdf, decrypt_pdf_byte
 from ai_ollama import ai_extract_and_classify
 from datetime import datetime
 
-
-# ============================================================
-# OCR + SERVER INITIAL SETUP
-# ============================================================
-
 TESSERACT_CMD = os.getenv("TESSERACT_CMD")
 if TESSERACT_CMD:
     pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
@@ -34,18 +29,8 @@ app.add_middleware(
 
 init_db()  # create tables if not exist
 
-
-# ============================================================
-# Pydantic models
-# ============================================================
-
 class PasswordRequest(BaseModel):
     password: str
-
-
-# ============================================================
-# OCR Helpers
-# ============================================================
 
 def ocr_from_image_bytes(contents: bytes) -> str:
     img = Image.open(io.BytesIO(contents)).convert("RGB")
@@ -57,19 +42,9 @@ def ocr_from_pdf_path(pdf_path: str) -> str:
     text_blocks = [pytesseract.image_to_string(pg) for pg in pages]
     return "\n".join(text_blocks)
 
-
-# ============================================================
-# ROOT
-# ============================================================
-
 @app.get("/")
 def root():
     return {"message": "PaperTrail API Running"}
-
-
-# ============================================================
-# UPLOAD + PROCESS DOCUMENT
-# ============================================================
 
 @app.post("/upload/")
 async def upload_and_process(file: UploadFile = File(...)):
@@ -82,9 +57,6 @@ async def upload_and_process(file: UploadFile = File(...)):
     contents = await file.read()
     temp_path.write_bytes(contents)
 
-    # ---------------------
-    # Perform OCR depending on file type
-    # ---------------------
     try:
         if ext == ".pdf":
             raw_text = ocr_from_pdf_path(str(temp_path))
@@ -118,9 +90,6 @@ async def upload_and_process(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OCR error: {e}")
 
-    # ---------------------
-    # AI classify + field extraction
-    # ---------------------
     ai_out = ai_extract_and_classify(raw_text)
     doc_type = ai_out.get("doc_type", "other")
 
@@ -137,9 +106,6 @@ async def upload_and_process(file: UploadFile = File(...)):
     out_name = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{doc_type}_{uid}"
     encrypted_path = encrypt_and_save_pdf(pdf_bytes, out_name)
 
-    # ---------------------
-    # Save database record
-    # ---------------------
     db = SessionLocal()
     doc = Document(
         filename=filename,
@@ -161,10 +127,6 @@ async def upload_and_process(file: UploadFile = File(...)):
     }
 
 
-# ============================================================
-# GET ALL DOCUMENTS
-# ============================================================
-
 @app.get("/documents/")
 def list_documents(limit: int = 100):
     db = SessionLocal()
@@ -181,11 +143,6 @@ def list_documents(limit: int = 100):
         }
         for d in docs
     ]
-
-
-# ============================================================
-# GET ONE DOCUMENT
-# ============================================================
 
 @app.get("/documents/{doc_id}")
 def get_document(doc_id: int):
@@ -211,10 +168,6 @@ def get_document(doc_id: int):
     }
 
 
-# ============================================================
-# UNLOCK DOCUMENT (PASSWORD REQUIRED EACH TIME)
-# ============================================================
-
 @app.post("/documents/{doc_id}/unlock")
 def unlock_document(doc_id: int, req: PasswordRequest):
     db = SessionLocal()
@@ -232,9 +185,6 @@ def unlock_document(doc_id: int, req: PasswordRequest):
             "message": "Too many wrong attempts. Document is locked."
         }
 
-    # ------------------------------------
-    # Password check
-    # ------------------------------------
     CORRECT_PASSWORD = os.getenv("PAPERTRAIL_PASSWORD", "decryptme!")
 
     if req.password != CORRECT_PASSWORD:
@@ -264,11 +214,6 @@ def unlock_document(doc_id: int, req: PasswordRequest):
         "download_url": f"/documents/{doc_id}/download-decrypted"
     }
 
-
-# ============================================================
-# DOWNLOAD ENCRYPTED PDF (ALWAYS ALLOWED)
-# ============================================================
-
 @app.get("/documents/{doc_id}/download")
 def download_encrypted_pdf(doc_id: int):
     db = SessionLocal()
@@ -285,10 +230,6 @@ def download_encrypted_pdf(doc_id: int):
         filename=os.path.basename(d.pdf_path)
     )
 
-
-# ============================================================
-# DOWNLOAD DECRYPTED PDF (ONLY AFTER SUCCESSFUL UNLOCK)
-# ============================================================
 
 @app.get("/documents/{doc_id}/download-decrypted")
 def download_decrypted_pdf(doc_id: int):
