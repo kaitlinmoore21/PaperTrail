@@ -3,7 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-nativ
 import { router } from "expo-router";
 import CryptoJS from "crypto-js";
 
-// Simulated database storage (in memory only)
 let mockUserDB: any = null;
 
 export default function Signup() {
@@ -47,10 +46,9 @@ export default function Signup() {
       return;
     }
 
-    // Hash password
+
     const passwordHash = CryptoJS.SHA256(password).toString();
 
-    // Save user (mock database)
     mockUserDB = {
       email,
       passwordHash,
@@ -58,7 +56,7 @@ export default function Signup() {
 
     console.log("User registered:", mockUserDB);
 
-    // Navigate back to login
+
     router.replace("/login");
   }
 
