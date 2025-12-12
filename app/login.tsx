@@ -2,12 +2,9 @@ import { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { router } from "expo-router";
 
-// This simulates a secure backend.
-// Replace later with your real API.
 async function mockLoginAPI(email: string, password: string) {
   const crypto = require("crypto-js");
 
-  // Simulated stored user
   const storedUser = {
     email: "test@example.com",
     passwordHash: crypto.SHA256("Password123!").toString(),
@@ -42,7 +39,6 @@ export default function Login() {
     try {
       const result = await mockLoginAPI(email, password);
 
-      // Secure token stored only for session; don't store passwords
       console.log("Logged in:", result.token);
 
       router.push("/home"); // Navigate to your home screen
