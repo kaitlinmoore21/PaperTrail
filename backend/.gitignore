@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.env
+.venv/
+
+# VSCode
+.vscode/
+
+# Uploads & storage (optional: if these are too large)
+uploads/
+storage/
