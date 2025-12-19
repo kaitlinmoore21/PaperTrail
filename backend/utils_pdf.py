@@ -79,22 +79,18 @@ def generate_pdf_bytes(metadata: dict, raw_text: str, fields: dict) -> bytes:
 # ---------------------------------------------------------------------
 #              ENCRYPTION USING A SHARED PASSWORD KEY
 # ---------------------------------------------------------------------
+from cryptography.fernet import Fernet
+import os
+
 def _get_fernet():
-    """
-    Returns a Fernet instance using a shared key.
-
-    Uses PDF_PASSWORD from environment.
-    If missing, generates a temporary session key.
-    """
     key = os.getenv("PDF_PASSWORD")
-
     if not key:
-        # Not for production; ensures encryption always works.
-        temp_key = Fernet.generate_key()
-        os.environ["PDF_PASSWORD"] = temp_key.decode()
-        key = temp_key.decode()
-
+        raise RuntimeError(
+            "PDF_PASSWORD environment variable not set! "
+            "Set it before starting the app."
+        )
     return Fernet(key.encode())
+
 
 
 # ---------------------------------------------------------------------

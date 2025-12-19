@@ -9,3 +9,11 @@ requests
 reportlab
 cryptography
 python-dotenv
+fastapi
+uvicorn
+sqlalchemy
+reportlab
+pdf2image
+pytesseract
+Pillow
+cryptography

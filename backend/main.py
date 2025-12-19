@@ -14,6 +14,9 @@ from datetime import datetime
 from docx import Document as DocxDocument
 from docx.opc.exceptions import PackageNotFoundError
 import textract 
+from dotenv import load_dotenv
+load_dotenv()
+
 
 
 TESSERACT_CMD = os.getenv("TESSERACT_CMD")
@@ -66,6 +69,31 @@ def ocr_from_pdf_path(pdf_path: str) -> str:
 @app.get("/")
 def root():
     return {"message": "PaperTrail API Running"}
+
+def normalize_ai_output(ai_out: dict) -> dict:
+    return {
+        "patient": {
+            "name": ai_out.get("patient_name")
+        },
+        "tests": [
+            {
+                "name": test_name,
+                "result": result
+            }
+            for test_name, result in ai_out.get("test_results", {}).items()
+        ],
+        "medications": [
+            {
+                "name": med_name,
+                "dose_per_day": dose
+            }
+            for med_name, dose in ai_out.get("medicine", {}).items()
+        ],
+        "instructions": {
+            "frequency": ai_out.get("directions", {}).get("frequency", []),
+            "contact": ai_out.get("directions", {}).get("contact_info", {})
+        }
+    }
 
 @app.post("/upload/")
 async def upload_and_process(file: UploadFile = File(...)):
@@ -279,6 +307,7 @@ def unlock_document(doc_id: int, req: PasswordRequest):
         "status": "success",
         "download_url": f"/documents/{doc_id}/download-decrypted"
     }
+
 
 @app.get("/documents/{doc_id}/download")
 def download_encrypted_pdf(doc_id: int):
