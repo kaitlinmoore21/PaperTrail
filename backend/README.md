@@ -1,5 +1,6 @@
 # Navigate to the Backend Directory
-cd "C:\Final Project\PaperTrail\backend"
+ cd "C:\Users\kkmoo\OneDrive - National College of Ireland\YEAR4\Final Project\PaperTrail\backend"
+
 
 # Create Virtual Environment (powershell)
 python -m venv venv
