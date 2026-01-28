@@ -6,7 +6,7 @@
 python -m venv venv
 
 # Activate Virtual Enviroment (powershell)
- .venv\Scripts\Activate.ps1
+ venv\Scripts\Activate.ps1
 
 # The FastAPI Server (install required package)
  pip install fastapi uvicorn
