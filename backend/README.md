@@ -11,6 +11,10 @@ python -m venv venv
 # The FastAPI Server (install required package)
 pip install -r requirements.txt
  pip install fastapi uvicorn
+ pip install python-docx
+
+# DownGrade Pip for Testeract
+python -m pip install "pip<24.1"
 
 # Run the FastAPI Server
 uvicorn main:app --reload
