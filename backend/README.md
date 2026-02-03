@@ -9,6 +9,7 @@ python -m venv venv
  venv\Scripts\Activate.ps1
 
 # The FastAPI Server (install required package)
+pip install -r requirements.txt
  pip install fastapi uvicorn
 
 # Run the FastAPI Server
