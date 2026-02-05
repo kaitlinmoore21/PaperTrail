@@ -1,0 +1,22 @@
+{
+ "expo": {
+    "name": "PaperTrail",
+    "slug": "PaperTrail",
+    "scheme": "papertrail", 
+    "version": "1.0.0",
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow PaperTrail to access your camera to scan documents."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow PaperTrail to access your photos to upload documents."
+        }
+      ]
+    ]
+  }
+}
