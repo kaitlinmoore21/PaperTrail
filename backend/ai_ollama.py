@@ -1,4 +1,3 @@
-# ai_ollama.py
 import subprocess
 import json
 

@@ -16,8 +16,7 @@ from docx.opc.exceptions import PackageNotFoundError
 import textract 
 from dotenv import load_dotenv
 load_dotenv()
-
-
+from datetime import datetime
 
 TESSERACT_CMD = os.getenv("TESSERACT_CMD")
 if TESSERACT_CMD:
@@ -26,8 +25,12 @@ if TESSERACT_CMD:
 
 print(f"pytesseract command: {pytesseract.pytesseract.tesseract_cmd!r}")
 
+# --- STORAGE CONFIG ---
 UPLOAD_DIR = Path("C:/PaperTrail/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+# Added this to give the encrypted files a home base
+ENCRYPTED_DIR = Path("C:/PaperTrail/storage") 
+ENCRYPTED_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="PaperTrail Backend")
 
@@ -43,19 +46,13 @@ init_db()  # create tables if not exist
 class PasswordRequest(BaseModel):
     password: str
 
-# --- NEW HELPER FUNCTION FOR DOCX ---
+# --- HELPERS ---
 def fast_extract_docx(contents: bytes) -> str | None:
-    """Extracts text directly from DOCX bytes without using LibreOffice or OCR."""
     try:
         doc = DocxDocument(io.BytesIO(contents))
         return "\n".join([p.text for p in doc.paragraphs])
-    except PackageNotFoundError:
-        # File is corrupt or not a true DOCX
+    except Exception:
         return None
-    except Exception as e:
-        print(f"python-docx failed: {e}")
-        return None
-# ------------------------------------
 
 def ocr_from_image_bytes(contents: bytes) -> str:
     img = Image.open(io.BytesIO(contents)).convert("RGB")
@@ -70,31 +67,6 @@ def ocr_from_pdf_path(pdf_path: str) -> str:
 def root():
     return {"message": "PaperTrail API Running"}
 
-def normalize_ai_output(ai_out: dict) -> dict:
-    return {
-        "patient": {
-            "name": ai_out.get("patient_name")
-        },
-        "tests": [
-            {
-                "name": test_name,
-                "result": result
-            }
-            for test_name, result in ai_out.get("test_results", {}).items()
-        ],
-        "medications": [
-            {
-                "name": med_name,
-                "dose_per_day": dose
-            }
-            for med_name, dose in ai_out.get("medicine", {}).items()
-        ],
-        "instructions": {
-            "frequency": ai_out.get("directions", {}).get("frequency", []),
-            "contact": ai_out.get("directions", {}).get("contact_info", {})
-        }
-    }
-
 @app.post("/upload/")
 async def upload_and_process(file: UploadFile = File(...)):
     filename = file.filename or "upload"
@@ -103,95 +75,45 @@ async def upload_and_process(file: UploadFile = File(...)):
     temp_path = UPLOAD_DIR / f"{uid}{ext}"
     raw_text = None
 
-    # Save file
     contents = await file.read()
     temp_path.write_bytes(contents)
 
     try:
-        # --- PDF ---
         if ext == ".pdf":
             raw_text = ocr_from_pdf_path(str(temp_path))
-
-        # --- Images ---
         elif ext in [".png", ".jpg", ".jpeg", ".tif", ".bmp"]:
             raw_text = ocr_from_image_bytes(contents)
-        
-        # --- DOCX (Fast Path) ---
         elif ext == ".docx":
             raw_text = fast_extract_docx(contents)
-            if raw_text:
-                print("DOCX: Fast python-docx extraction successful.")
-        
-        # --- DOC (Fast Path) ---
         elif ext == ".doc":
             try:
-                # textract-py3 handles .doc better than LibreOffice/OCR for raw text
                 raw_text_bytes = textract.process(str(temp_path))
                 raw_text = raw_text_bytes.decode('utf-8')
-                print("DOC: textract-py3 extraction successful.")
-            except Exception as e:
-                print(f"DOC: textract-py3 failed ({e}). Falling through to LibreOffice.")
+            except Exception:
+                pass
         
-        # --- DOC/DOCX Fallback (Original Slow Method) ---
         if raw_text is None and ext in [".doc", ".docx"]:
-            print("--- Running Slow LibreOffice Conversion Fallback ---")
-            
-            # The original contents are already saved to temp_path, but we need
-            # a named temp file for the conversion input/output control.
             with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
                 tmp.write(contents)
                 tmp_doc_path = tmp.name
-
-            soffice = os.getenv(
-                "SOFFICE_CMD",
-                r"C:\Program Files\LibreOffice\program\soffice.exe"
-            )
+            soffice = os.getenv("SOFFICE_CMD", r"C:\Program Files\LibreOffice\program\soffice.exe")
             outdir = tempfile.gettempdir()
-
-            # Execute the slow conversion process
-            result = subprocess.run(
-                [
-                    soffice,
-                    "--headless",
-                    "--convert-to", "pdf",
-                    "--outdir", outdir,
-                    tmp_doc_path
-                ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-
-            print("LibreOffice stdout:", result.stdout)
-            print("LibreOffice stderr:", result.stderr)
-
+            subprocess.run([soffice, "--headless", "--convert-to", "pdf", "--outdir", outdir, tmp_doc_path])
             pdf_path = os.path.join(outdir, Path(tmp_doc_path).stem + ".pdf")
-            os.unlink(tmp_doc_path) # Clean up the input file for soffice
+            os.unlink(tmp_doc_path)
+            if os.path.exists(pdf_path):
+                raw_text = ocr_from_pdf_path(pdf_path)
+                os.unlink(pdf_path)
 
-            if not os.path.exists(pdf_path):
-                raise HTTPException(status_code=500, detail="File conversion failed (LibreOffice)")
-
-            raw_text = ocr_from_pdf_path(pdf_path)
-            os.unlink(pdf_path) # Clean up the output PDF
-            
-        elif raw_text is None:
+        if raw_text is None:
              raise HTTPException(status_code=400, detail="Unsupported file format")
 
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Document processing error: {e}")
-
+        raise HTTPException(status_code=500, detail=f"Document error: {e}")
     finally:
-        # Clean up the original uploaded file
-        if os.path.exists(temp_path):
-            os.unlink(temp_path)
+        if os.path.exists(temp_path): os.unlink(temp_path)
 
-    # Missing OCR
-    if raw_text is None:
-        raise HTTPException(status_code=500, detail="Processing failed to generate text.")
-
-    # This call now receives smaller/cleaner text and should complete faster.
-    # The fix for the 60-second limit MUST be in ai_ollama.py
     ai_out = ai_extract_and_classify(raw_text) 
     doc_type = ai_out.get("doc_type", "other")
 
@@ -202,8 +124,11 @@ async def upload_and_process(file: UploadFile = File(...)):
     }
 
     pdf_bytes = generate_pdf_bytes(metadata, raw_text, ai_out)
-    out_name = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{doc_type}_{uid}"
-    encrypted_path = encrypt_and_save_pdf(pdf_bytes, out_name)
+ 
+    file_id = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{doc_type}_{uid}.pdf"
+    full_save_path = str((ENCRYPTED_DIR / file_id).absolute()) 
+    
+    encrypted_path = encrypt_and_save_pdf(pdf_bytes, full_save_path)
 
     db = SessionLocal()
     doc = Document(
@@ -218,132 +143,94 @@ async def upload_and_process(file: UploadFile = File(...)):
     db.refresh(doc)
     db.close()
 
-    return {
-        "id": doc.id,
-        "filename": filename,
-        "doc_type": doc_type,
-        "pdf_path": encrypted_path
-    }
+    return {"id": doc.id, "filename": filename, "doc_type": doc_type, "pdf_path": encrypted_path}
 
 @app.get("/documents/")
-def list_documents(limit: int = 100):
+def get_documents():
     db = SessionLocal()
-    docs = db.query(Document).order_by(Document.created_at.desc()).limit(limit).all()
+    docs = db.query(Document).all()
+    # Format the date specifically for your frontend search
+    results = []
+    for d in docs:
+      results.append({
+          "id": d.id,
+          "filename": d.filename,
+          "created_at": d.created_at.strftime("%d/%m/%Y"), # Converts to 03/02/2026
+          "doc_type": d.doc_type
+      })
     db.close()
-
-    return [
-        {
-            "id": d.id,
-            "filename": d.filename,
-            "doc_type": d.doc_type,
-            "created_at": d.created_at.isoformat(),
-            "locked": d.locked
-        }
-        for d in docs
-    ]
+    return results
 
 @app.get("/documents/{doc_id}")
 def get_document(doc_id: int):
     db = SessionLocal()
     d = db.query(Document).get(doc_id)
     db.close()
-
-    if not d:
-        raise HTTPException(status_code=404, detail="Not found")
-
-    try:
-        fields = json.loads(d.fields_json)
-    except:
-        fields = {}
-
-    return {
-        "id": d.id,
-        "filename": d.filename,
-        "doc_type": d.doc_type,
-        "created_at": d.created_at.isoformat(),
-        "fields": fields,
-        "locked": d.locked
-    }
+    if not d: raise HTTPException(status_code=404)
+    return {"id": d.id, "filename": d.filename, "doc_type": d.doc_type, "created_at": d.created_at.isoformat(), "fields": json.loads(d.fields_json), "locked": d.locked}
 
 @app.post("/documents/{doc_id}/unlock")
 def unlock_document(doc_id: int, req: PasswordRequest):
     db = SessionLocal()
     d = db.query(Document).get(doc_id)
-
-    if not d:
+    if not d: 
         db.close()
-        raise HTTPException(status_code=404, detail="Not found")
-
+        raise HTTPException(status_code=404)
     if d.locked:
         db.close()
-        return {
-            "status": "locked",
-            "message": "Too many wrong attempts. Document is locked."
-        }
+        return {"status": "locked", "message": "Document is locked."}
 
     CORRECT_PASSWORD = os.getenv("PAPERTRAIL_PASSWORD", "decryptme!")
-
     if req.password != CORRECT_PASSWORD:
         d.failed_attempts += 1
-
-        if d.failed_attempts >= 3:
-            d.locked = True
-
+        if d.failed_attempts >= 3: d.locked = True
         db.commit()
-        remaining = max(0, 3 - d.failed_attempts)
         db.close()
-
-        return {
-            "status": "error",
-            "message": "Incorrect password",
-            "remaining_attempts": remaining
-        }
-
+        return {"status": "error", "message": "Incorrect password"}
+    
     d.failed_attempts = 0
     db.commit()
     db.close()
-
-    return {
-        "status": "success",
-        "download_url": f"/documents/{doc_id}/download-decrypted"
-    }
-
+    return {"status": "success", "download_url": f"/documents/{doc_id}/download-decrypted"}
 
 @app.get("/documents/{doc_id}/download")
 def download_encrypted_pdf(doc_id: int):
     db = SessionLocal()
     d = db.query(Document).get(doc_id)
     db.close()
-
-    if not d:
-        raise HTTPException(status_code=404, detail="Not found")
-
+    if not d: raise HTTPException(status_code=404)
     from fastapi.responses import FileResponse
-    return FileResponse(
-        d.pdf_path,
-        media_type="application/octet-stream",
-        filename=os.path.basename(d.pdf_path)
-    )
+    return FileResponse(d.pdf_path, media_type="application/octet-stream", filename=os.path.basename(d.pdf_path))
 
 @app.get("/documents/{doc_id}/download-decrypted")
 def download_decrypted_pdf(doc_id: int):
     db = SessionLocal()
     d = db.query(Document).get(doc_id)
-
-    if not d:
+    if not d or d.locked:
         db.close()
-        raise HTTPException(status_code=404, detail="Not found")
-
-    if d.locked:
-        db.close()
-        raise HTTPException(status_code=403, detail="Document is locked.")
-
+        raise HTTPException(status_code=403)
     pdf_bytes = decrypt_pdf_bytes_from_path(d.pdf_path)
     db.close()
-
     from fastapi.responses import StreamingResponse
-    return StreamingResponse(
-        io.BytesIO(pdf_bytes),
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{d.filename}.pdf"'}
-    )
+    return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{d.filename}.pdf"'})
+
+# Add these imports at the top
+from pydantic import EmailStr
+
+# Add a model for Auth
+class AuthRequest(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/signup/")  
+async def signup(user: AuthRequest):
+    print(f"New Signup Request: {user.email}")
+    return {"message": "User created successfully", "user": user.email}
+
+@app.post("/login/")   
+async def login(user: AuthRequest):
+    print(f"Login attempt: {user.email}")
+    if user.email and user.password:
+        return {"message": "Login successful", "token": "fake-jwt-token"}
+    raise HTTPException(status_code=400, detail="Invalid email or password")

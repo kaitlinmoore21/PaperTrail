@@ -1,4 +1,3 @@
-# backend/ai_hf.py
 import os, httpx, json
 
 HF_TOKEN = os.getenv("HF_API_TOKEN")  # set in env

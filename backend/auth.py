@@ -1,4 +1,3 @@
-# auth.py
 import os
 from datetime import datetime, timedelta
 from typing import Optional
@@ -9,7 +8,6 @@ from database import SessionLocal
 from models import User
 import jwt
 
-# Optional imports for secure mode:
 try:
     from passlib.context import CryptContext
     pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
