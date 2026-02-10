@@ -1,4 +1,4 @@
-export const DEV_IP = "10.3.225.0"; 
+export const DEV_IP = "10.3.224.202"; 
 export const API_BASE = `http://${DEV_IP}:8000`;
 
 export const HSE_THEME = {
