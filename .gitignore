@@ -29,3 +29,4 @@ Test Files/
 
 #Package Lock
 package-lock.json/
+.vscode/
