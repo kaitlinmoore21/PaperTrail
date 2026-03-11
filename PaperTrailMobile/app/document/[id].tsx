@@ -87,7 +87,7 @@ export default function DocumentDetail() {
         </View>
       </Modal>
     </View>
-  );
+  ); 
 }
 
 const styles = StyleSheet.create({

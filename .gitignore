@@ -30,3 +30,21 @@ Test Files/
 #Package Lock
 package-lock.json/
 .vscode/
+node_modules/
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p12
+*.key
+*.mobileprovision
+__pycache__/
+*.py[cod]
+*$py.class
+.venv
+venv/
+ENV/
+.env
+C:/PaperTrail/uploads/*
+C:/PaperTrail/storage/*
+*.db

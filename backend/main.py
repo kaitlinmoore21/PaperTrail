@@ -157,7 +157,6 @@ def unlock_document(doc_id: int, req: PasswordRequest):
         db.close()
         raise HTTPException(status_code=404)
     
-    # Still using the global app password for individual PDF unlocking
     CORRECT_PASSWORD = os.getenv("PAPERTRAIL_PASSWORD", "decryptme!")
     if req.password != CORRECT_PASSWORD:
         d.failed_attempts += 1
@@ -181,3 +180,22 @@ def download_decrypted_pdf(doc_id: int):
     pdf_bytes = decrypt_pdf_bytes_from_path(d.pdf_path)
     db.close()
     return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{d.filename}.pdf"'})
+
+# --- NEW: VIEW IN APP FEATURE ---
+@app.get("/documents/{doc_id}/details")
+def get_document_details(doc_id: int):
+    """
+    Retrieves the extracted JSON data for the mobile app's 'View In-App' modal.
+    """
+    db = SessionLocal()
+    d = db.query(Document).filter(Document.id == doc_id).first()
+    db.close()
+    if not d:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    return {
+        "id": d.id,
+        "filename": d.filename,
+        "doc_type": d.doc_type,
+        "extracted_data": json.loads(d.fields_json) if d.fields_json else {}
+    }

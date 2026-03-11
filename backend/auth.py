@@ -1,4 +1,5 @@
 import os
+import bcrypt # Import bcrypt directly to fix the passlib bug
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,24 +10,31 @@ from models import User
 import jwt
 from passlib.context import CryptContext
 
-# Bcrypt handles salting automatically
+# --- THE BCRYPT HACK FOR PYTHON 3.14 ---
+# Passlib looks for bcrypt.__about__.__version__, which is gone in newer bcrypt.
+# We manually inject it here so Passlib stops crashing.
+if not hasattr(bcrypt, "__about__"):
+    class About:
+        __version__ = getattr(bcrypt, "__version__", "4.0.1")
+    bcrypt.__about__ = About()
+
+# Now we can safely define the context
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# No prefix, so it matches /signup/ and /login/ exactly
 router = APIRouter(tags=["auth"])
 
 SECRET_KEY = os.getenv("SECRET_KEY", "hc-paper-trail-99-key") 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-# --- MODELS ADJUSTED FOR FRONTEND JSON ---
+# --- MODELS ---
 class SignupRequest(BaseModel):
-    email: str             # Frontend sends 'email'
-    password: str          # Frontend sends 'password'
-    username: Optional[str] = None # Make this optional to avoid 422 errors
+    email: str 
+    password: str 
+    username: Optional[str] = None
 
 class LoginRequest(BaseModel):
-    email: str             # Changed from username to email to match frontend
+    email: str 
     password: str
 
 class TokenResponse(BaseModel):
@@ -40,14 +48,22 @@ def get_db():
     finally:
         db.close()
 
-# --- Security Helpers ---
-def verify_password(plain_password, hashed_password):
-    return pwd_ctx.verify(plain_password, hashed_password)
+# --- SECURITY HELPERS ---
+def verify_password(plain_password: str, hashed_password: str):
+    # Convert strings to bytes for the bcrypt library
+    password_bytes = plain_password.encode('utf-8')
+    hashed_bytes = hashed_password.encode('utf-8')
+    # This direct call bypasses the Passlib version check bug
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
 
-def get_password_hash(password):
-    # Passlib can sometimes get confused with plain strings on newer Python versions
-    # We ensure it's handled properly by the context
-    return pwd_ctx.hash(password)
+def get_password_hash(password: str):
+    # Convert string to bytes
+    password_bytes = password.encode('utf-8')
+    # Generate salt and hash
+    salt = bcrypt.gensalt()
+    hashed_bytes = bcrypt.hashpw(password_bytes, salt)
+    # Return as a string to store in the database
+    return hashed_bytes.decode('utf-8')
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -55,18 +71,16 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire, "iat": datetime.utcnow()})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-# --- Routes ---
+# --- ROUTES ---
 
 @router.post("/signup/")
 def signup(req: SignupRequest, db: Session = Depends(get_db)):
-    # Check if email is already taken
     existing = db.query(User).filter(User.email == req.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed_pwd = get_password_hash(req.password)
     
-    # Use email as username if frontend didn't provide a specific username
     db_username = req.username if req.username else req.email
     
     user = User(
@@ -82,7 +96,6 @@ def signup(req: SignupRequest, db: Session = Depends(get_db)):
 
 @router.post("/login/", response_model=TokenResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
-    # Look up by email since that's what your frontend is sending
     user = db.query(User).filter(User.email == req.email).first()
     
     if not user or not verify_password(req.password, user.password):
