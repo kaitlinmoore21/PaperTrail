@@ -17,4 +17,6 @@ pdf2image
 pytesseract
 Pillow
 cryptography
-passlib[bcrypt]
+PyJWT==2.10.1
+passlib[bcrypt]==1.7.4
+bcrypt==5.0.0

@@ -1,34 +1,34 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+import os, io, uuid, json, tempfile, subprocess, traceback
+from pathlib import Path
+from datetime import datetime
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 from pdf2image import convert_from_path
 from PIL import Image
-import traceback
-import pytesseract, os, io, uuid, json, tempfile, subprocess
-from pathlib import Path
+import pytesseract
+from docx import Document as DocxDocument
+import textract 
+from dotenv import load_dotenv
+
+# Database and Local Logic
 from database import SessionLocal, init_db
 from models import Document
 from utils_pdf import generate_pdf_bytes, encrypt_and_save_pdf, decrypt_pdf_bytes_from_path
 from ai_ollama import ai_extract_and_classify
-from datetime import datetime
-from docx import Document as DocxDocument
-from docx.opc.exceptions import PackageNotFoundError
-import textract 
-from dotenv import load_dotenv
-load_dotenv()
-from datetime import datetime
+from auth import router as auth_router # Import our new auth router
 
+load_dotenv()
+
+# --- TESSERACT CONFIG ---
 TESSERACT_CMD = os.getenv("TESSERACT_CMD")
 if TESSERACT_CMD:
     pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
-    print(f"TESSERACT_CMD set to: {TESSERACT_CMD!r}")
-
-print(f"pytesseract command: {pytesseract.pytesseract.tesseract_cmd!r}")
 
 # --- STORAGE CONFIG ---
 UPLOAD_DIR = Path("C:/PaperTrail/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-# Added this to give the encrypted files a home base
 ENCRYPTED_DIR = Path("C:/PaperTrail/storage") 
 ENCRYPTED_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -41,18 +41,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-init_db()  # create tables if not exist
+# Initialize DB and Include Auth
+init_db()
+app.include_router(auth_router)
 
 class PasswordRequest(BaseModel):
     password: str
 
-# --- HELPERS ---
+# --- OCR HELPERS ---
 def fast_extract_docx(contents: bytes) -> str | None:
     try:
         doc = DocxDocument(io.BytesIO(contents))
         return "\n".join([p.text for p in doc.paragraphs])
-    except Exception:
-        return None
+    except Exception: return None
 
 def ocr_from_image_bytes(contents: bytes) -> str:
     img = Image.open(io.BytesIO(contents)).convert("RGB")
@@ -67,6 +68,7 @@ def ocr_from_pdf_path(pdf_path: str) -> str:
 def root():
     return {"message": "PaperTrail API Running"}
 
+# --- DOCUMENT ROUTES ---
 @app.post("/upload/")
 async def upload_and_process(file: UploadFile = File(...)):
     filename = file.filename or "upload"
@@ -89,8 +91,7 @@ async def upload_and_process(file: UploadFile = File(...)):
             try:
                 raw_text_bytes = textract.process(str(temp_path))
                 raw_text = raw_text_bytes.decode('utf-8')
-            except Exception:
-                pass
+            except Exception: pass
         
         if raw_text is None and ext in [".doc", ".docx"]:
             with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
@@ -116,48 +117,27 @@ async def upload_and_process(file: UploadFile = File(...)):
 
     ai_out = ai_extract_and_classify(raw_text) 
     doc_type = ai_out.get("doc_type", "other")
-
-    metadata = {
-        "filename": filename,
-        "doc_type": doc_type,
-        "created_at": datetime.utcnow().isoformat(),
-    }
-
+    
+    metadata = {"filename": filename, "doc_type": doc_type, "created_at": datetime.utcnow().isoformat()}
     pdf_bytes = generate_pdf_bytes(metadata, raw_text, ai_out)
- 
     file_id = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{doc_type}_{uid}.pdf"
     full_save_path = str((ENCRYPTED_DIR / file_id).absolute()) 
-    
     encrypted_path = encrypt_and_save_pdf(pdf_bytes, full_save_path)
 
     db = SessionLocal()
-    doc = Document(
-        filename=filename,
-        doc_type=doc_type,
-        raw_text=raw_text,
-        fields_json=json.dumps(ai_out),
-        pdf_path=encrypted_path
-    )
+    doc = Document(filename=filename, doc_type=doc_type, raw_text=raw_text, fields_json=json.dumps(ai_out), pdf_path=encrypted_path)
     db.add(doc)
     db.commit()
     db.refresh(doc)
     db.close()
 
-    return {"id": doc.id, "filename": filename, "doc_type": doc_type, "pdf_path": encrypted_path}
+    return {"id": doc.id, "filename": filename, "doc_type": doc_type}
 
 @app.get("/documents/")
 def get_documents():
     db = SessionLocal()
     docs = db.query(Document).all()
-    # Format the date specifically for your frontend search
-    results = []
-    for d in docs:
-      results.append({
-          "id": d.id,
-          "filename": d.filename,
-          "created_at": d.created_at.strftime("%d/%m/%Y"), # Converts to 03/02/2026
-          "doc_type": d.doc_type
-      })
+    results = [{"id": d.id, "filename": d.filename, "created_at": d.created_at.strftime("%d/%m/%Y"), "doc_type": d.doc_type} for d in docs]
     db.close()
     return results
 
@@ -176,10 +156,8 @@ def unlock_document(doc_id: int, req: PasswordRequest):
     if not d: 
         db.close()
         raise HTTPException(status_code=404)
-    if d.locked:
-        db.close()
-        return {"status": "locked", "message": "Document is locked."}
-
+    
+    # Still using the global app password for individual PDF unlocking
     CORRECT_PASSWORD = os.getenv("PAPERTRAIL_PASSWORD", "decryptme!")
     if req.password != CORRECT_PASSWORD:
         d.failed_attempts += 1
@@ -193,15 +171,6 @@ def unlock_document(doc_id: int, req: PasswordRequest):
     db.close()
     return {"status": "success", "download_url": f"/documents/{doc_id}/download-decrypted"}
 
-@app.get("/documents/{doc_id}/download")
-def download_encrypted_pdf(doc_id: int):
-    db = SessionLocal()
-    d = db.query(Document).get(doc_id)
-    db.close()
-    if not d: raise HTTPException(status_code=404)
-    from fastapi.responses import FileResponse
-    return FileResponse(d.pdf_path, media_type="application/octet-stream", filename=os.path.basename(d.pdf_path))
-
 @app.get("/documents/{doc_id}/download-decrypted")
 def download_decrypted_pdf(doc_id: int):
     db = SessionLocal()
@@ -211,26 +180,4 @@ def download_decrypted_pdf(doc_id: int):
         raise HTTPException(status_code=403)
     pdf_bytes = decrypt_pdf_bytes_from_path(d.pdf_path)
     db.close()
-    from fastapi.responses import StreamingResponse
     return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{d.filename}.pdf"'})
-
-# Add these imports at the top
-from pydantic import EmailStr
-
-# Add a model for Auth
-class AuthRequest(BaseModel):
-    email: str
-    password: str
-
-
-@app.post("/signup/")  
-async def signup(user: AuthRequest):
-    print(f"New Signup Request: {user.email}")
-    return {"message": "User created successfully", "user": user.email}
-
-@app.post("/login/")   
-async def login(user: AuthRequest):
-    print(f"Login attempt: {user.email}")
-    if user.email and user.password:
-        return {"message": "Login successful", "token": "fake-jwt-token"}
-    raise HTTPException(status_code=400, detail="Invalid email or password")

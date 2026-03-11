@@ -7,36 +7,31 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import User
 import jwt
+from passlib.context import CryptContext
 
-try:
-    from passlib.context import CryptContext
-    pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-except Exception:
-    pwd_ctx = None
+# Bcrypt handles salting automatically
+pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+# No prefix, so it matches /signup/ and /login/ exactly
+router = APIRouter(tags=["auth"])
 
-# Config via env
-INSECURE = os.getenv("INSECURE_AUTH", "0") == "1"
-SECRET_KEY = os.getenv("SECRET_KEY", "change-this-secret-in-prod")
+SECRET_KEY = os.getenv("SECRET_KEY", "hc-paper-trail-99-key") 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-# Request/response models
+# --- MODELS ADJUSTED FOR FRONTEND JSON ---
 class SignupRequest(BaseModel):
-    username: str
-    password: str
-    email: Optional[str] = None
+    email: str             # Frontend sends 'email'
+    password: str          # Frontend sends 'password'
+    username: Optional[str] = None # Make this optional to avoid 422 errors
 
 class LoginRequest(BaseModel):
-    username: str
+    email: str             # Changed from username to email to match frontend
     password: str
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    expires_at: Optional[str] = None
-
 
 def get_db():
     db = SessionLocal()
@@ -45,56 +40,55 @@ def get_db():
     finally:
         db.close()
 
-def verify_password(plain, hashed):
-    if INSECURE:
-        # insecure compare: plaintext equality
-        return plain == hashed
-    else:
-        if not pwd_ctx:
-            raise RuntimeError("passlib required for secure mode")
-        return pwd_ctx.verify(plain, hashed)
+# --- Security Helpers ---
+def verify_password(plain_password, hashed_password):
+    return pwd_ctx.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
-    if INSECURE:
-        # insecure: store plaintext (DEMO ONLY)
-        return password
-    else:
-        if not pwd_ctx:
-            raise RuntimeError("passlib required for secure mode")
-        return pwd_ctx.hash(password)
+    # Passlib can sometimes get confused with plain strings on newer Python versions
+    # We ensure it's handled properly by the context
+    return pwd_ctx.hash(password)
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict):
     to_encode = data.copy()
-    now = datetime.utcnow()
-    if expires_delta:
-        expire = now + expires_delta
-    else:
-        expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire, "iat": now})
-    token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return token, expire.isoformat()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire, "iat": datetime.utcnow()})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-@router.post("/signup", response_model=dict)
+# --- Routes ---
+
+@router.post("/signup/")
 def signup(req: SignupRequest, db: Session = Depends(get_db)):
-    # check existing
-    existing = db.query(User).filter((User.username == req.username) | (User.email == req.email)).first()
+    # Check if email is already taken
+    existing = db.query(User).filter(User.email == req.email).first()
     if existing:
-        raise HTTPException(status_code=400, detail="username or email already exists")
-    user = User(username=req.username, email=req.email, password=get_password_hash(req.password))
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    hashed_pwd = get_password_hash(req.password)
+    
+    # Use email as username if frontend didn't provide a specific username
+    db_username = req.username if req.username else req.email
+    
+    user = User(
+        username=db_username,
+        email=req.email,
+        password=hashed_pwd
+    )
+    
     db.add(user)
     db.commit()
     db.refresh(user)
-    return {"id": user.id, "username": user.username}
+    return {"id": user.id, "email": user.email, "status": "created"}
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login/", response_model=TokenResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == req.username).first()
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    if not verify_password(req.password, user.password):
+    # Look up by email since that's what your frontend is sending
+    user = db.query(User).filter(User.email == req.email).first()
+    
+    if not user or not verify_password(req.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # Build token payload
-    token_payload = {"sub": user.username, "user_id": user.id}
-    token, expires_at = create_access_token(token_payload)
-    return {"access_token": token, "expires_at": expires_at}
+    token_payload = {"sub": user.email, "user_id": user.id}
+    token = create_access_token(token_payload)
+    
+    return {"access_token": token, "token_type": "bearer"}
