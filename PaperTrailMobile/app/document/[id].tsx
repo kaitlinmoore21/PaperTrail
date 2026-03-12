@@ -53,17 +53,10 @@ export default function DocumentDetail() {
           >
             <Text style={styles.buttonText}>View In-App (Private)</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.button, {backgroundColor: HSE_THEME.secondary}]}
-            onPress={() => Alert.alert("Download", "Download started...")}
-          >
-            <Text style={styles.buttonText}>Download PDF to Device</Text>
-          </TouchableOpacity>
-        </View>
+         </View>
       )}
 
-      {/* --- IN-APP VIEW MODAL --- */}
+      {/* IN-APP VIEW MODAL */}
       <Modal visible={viewVisible} animationType="slide">
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>

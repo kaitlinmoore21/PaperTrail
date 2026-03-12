@@ -1,50 +1,54 @@
-# Env
-.env
-*.env
+# --- System Files ---
+.DS_Store
+Thumbs.db
+*.log
 
-# Python
-__pycache__/
-*.pyc
-venv/
-backend/venv/
-
-# Node
+# --- Logic/App Code (JavaScript/TypeScript) ---
 node_modules/
+.npm/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Databases
+# --- Expo & React Native ---
+.expo/
+dist/
+web-build/
+artifacts/
+path/to/your/app/android/
+path/to/your/app/ios/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# --- Backend (Python) ---
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+venv/
+ENV/
+backend/venv/
+backend/.env
+
+# --- Databases & Storage ---
 *.db
-
-# Storage & uploads
+*.sqlite
 storage/
 uploads/
 backend/storage/
 backend/uploads/
 
-# Expo
-.expo/
-
-#Test Files
-Test Files/
-
-
-#Package Lock
-package-lock.json/
+# --- Editor / IDE ---
 .vscode/
-node_modules/
-.expo/
-dist/
-npm-debug.*
-*.jks
-*.p12
-*.key
-*.mobileprovision
-__pycache__/
-*.py[cod]
-*$py.class
-.venv
-venv/
-ENV/
-.env
-C:/PaperTrail/uploads/*
-C:/PaperTrail/storage/*
-*.db
+.idea/
+*.swp
+*.swo
+
+# --- Misc ---
+Test Files/
+.bin/
+assets/bin/
