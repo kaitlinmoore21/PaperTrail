@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Modal, ScrollView } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import api from '../../src/api';
-import { HSE_THEME } from '../../src/config';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE, HSE_THEME } from '../../src/config';
 
 export default function DocumentDetail() {
   const { id } = useLocalSearchParams();
+  const router = useRouter();
   const [password, setPassword] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [viewVisible, setViewVisible] = useState(false);
@@ -14,13 +15,15 @@ export default function DocumentDetail() {
   const handleUnlock = async () => {
     if (password === 'decryptme!') {
       try {
-        // Fetch the full decrypted content from your backend
-        const res = await api.get(`/documents/${id}/details`); 
-        setDocData(res.data);
+        const token = await AsyncStorage.getItem('userToken');
+        const res = await fetch(`${API_BASE}/documents/${id}/details`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setDocData(data);
         setIsUnlocked(true);
       } catch (err) {
-        // Fallback for demo: if endpoint isn't ready, just unlock the UI
-        setIsUnlocked(true);
+        setIsUnlocked(true); // Fallback for UI testing
       }
     } else {
       Alert.alert("Denied", "Incorrect password.");
@@ -31,7 +34,7 @@ export default function DocumentDetail() {
     <View style={styles.container}>
       {!isUnlocked ? (
         <View style={styles.center}>
-          <Text style={styles.lockIcon}></Text>
+          <Text style={styles.lockIcon}>🔒</Text>
           <Text style={styles.title}>Document Protected</Text>
           <TextInput 
             secureTextEntry 
@@ -46,7 +49,6 @@ export default function DocumentDetail() {
       ) : (
         <View style={styles.center}>
           <Text style={styles.successTitle}>Access Granted</Text>
-          
           <TouchableOpacity 
             style={[styles.button, {marginBottom: 15}]} 
             onPress={() => setViewVisible(true)}
@@ -56,7 +58,6 @@ export default function DocumentDetail() {
          </View>
       )}
 
-      {/* IN-APP VIEW MODAL */}
       <Modal visible={viewVisible} animationType="slide">
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
@@ -65,17 +66,13 @@ export default function DocumentDetail() {
               <Text style={styles.closeBtn}>Close</Text>
             </TouchableOpacity>
           </View>
-          
           <ScrollView style={styles.scrollArea}>
             <Text style={styles.infoLabel}>Patient/Document Details:</Text>
             <View style={styles.dataCard}>
               <Text style={styles.rawText}>
-                {docData ? JSON.stringify(docData, null, 2) : "Extracted medical data will appear here from the AI processing..."}
+                {docData ? JSON.stringify(docData.extracted_data || docData, null, 2) : "Decrypting data..."}
               </Text>
             </View>
-            <Text style={styles.warningText}>
-              Note: Closing this window clears the decrypted view from memory.
-            </Text>
           </ScrollView>
         </View>
       </Modal>
@@ -92,8 +89,6 @@ const styles = StyleSheet.create({
   input: { width: '100%', borderBottomWidth: 2, borderColor: HSE_THEME.primary, marginBottom: 30, textAlign: 'center', fontSize: 18 },
   button: { backgroundColor: HSE_THEME.primary, padding: 18, borderRadius: 12, width: '100%', alignItems: 'center' },
   buttonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-  
-  // Modal Styles
   modalContent: { flex: 1, backgroundColor: '#f9f9f9', paddingTop: 50 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
   modalTitle: { fontSize: 20, fontWeight: 'bold' },
@@ -101,6 +96,5 @@ const styles = StyleSheet.create({
   scrollArea: { padding: 20 },
   infoLabel: { fontWeight: 'bold', color: '#666', marginBottom: 10 },
   dataCard: { backgroundColor: 'white', padding: 15, borderRadius: 10, borderWidth: 1, borderColor: '#ddd' },
-  rawText: { fontFamily: 'monospace', fontSize: 14, color: '#333' },
-  warningText: { marginTop: 20, fontSize: 12, color: '#999', textAlign: 'center', fontStyle: 'italic' }
+  rawText: { fontFamily: 'monospace', fontSize: 14, color: '#333' }
 });

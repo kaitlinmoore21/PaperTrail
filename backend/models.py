@@ -9,6 +9,7 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=True)
     password = Column(String, nullable=False)  # Stores the Bcrypt hash
+    role = Column(String, nullable=False, default="secretary")
 
 class Document(Base):
     __tablename__ = "documents"

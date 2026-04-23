@@ -13,13 +13,14 @@ import {
   ScrollView 
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { API_BASE, HSE_THEME } from '../src/config';
 
 export default function Scan() {
   const [image, setImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [customName, setCustomName] = useState(''); // State for your file name
+  const [customName, setCustomName] = useState('');
   const router = useRouter();
   
   const { externalImage } = useLocalSearchParams(); 
@@ -27,14 +28,12 @@ export default function Scan() {
   useEffect(() => {
     if (externalImage) {
       setImage(externalImage as string);
-      // Pre-fill a name if coming from gallery
       setCustomName(`Upload_${new Date().getTime()}`);
     }
   }, [externalImage]);
 
   const launchCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
     if (status !== 'granted') {
       Alert.alert("Permission Denied", "Camera access is required to scan documents.");
       return;
@@ -47,7 +46,6 @@ export default function Scan() {
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
-      // Default name to save you typing every time, but you can change it
       const timestamp = new Date().toLocaleDateString().replace(/\//g, '-');
       setCustomName(`Doc_${timestamp}`);
     }
@@ -63,12 +61,12 @@ export default function Scan() {
     setUploading(true);
 
     try {
-      const formData = new FormData();
+      // 1. Get the Token from storage
+      const token = await AsyncStorage.getItem('userToken');
       
+      const formData = new FormData();
       const uriParts = image.split('.');
       const fileType = uriParts[uriParts.length - 1];
-      
-      // We use your custom name here and keep the original extension
       const finalFileName = `${customName.trim()}.${fileType}`;
 
       // @ts-ignore
@@ -78,18 +76,19 @@ export default function Scan() {
         type: finalFileName.endsWith('.pdf') ? 'application/pdf' : `image/${fileType}`,
       });
 
+      // 2. Add the Authorization Header
       const response = await fetch(`${API_BASE}/upload/`, {
         method: 'POST',
         body: formData,
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`, // THIS FIXES THE 401 ERROR
         },
       });
 
       if (response.ok) {
         Alert.alert("Success", `"${customName}" has been uploaded.`);
-        router.replace('/processed');
+        router.replace('/dashboard');
       } else {
         const errorData = await response.json();
         Alert.alert("Upload Failed", errorData.detail || "Server error");
@@ -118,13 +117,12 @@ export default function Scan() {
           )}
         </View>
 
-        {/* Name Input Field - Shows up after photo is taken */}
         {image && (
           <View style={styles.inputSection}>
             <Text style={styles.label}>Assign File Name</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. HSE_Invoice_2024"
+              placeholder="e.g. Invoice_2024"
               value={customName}
               onChangeText={setCustomName}
               placeholderTextColor="#999"
@@ -159,46 +157,13 @@ export default function Scan() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flexGrow: 1, 
-    backgroundColor: HSE_THEME.background, 
-    padding: 20, 
-    alignItems: 'center', 
-    justifyContent: 'center' 
-  },
+  container: { flexGrow: 1, backgroundColor: HSE_THEME.background, padding: 20, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 24, fontWeight: 'bold', color: HSE_THEME.primary, marginBottom: 20 },
-  previewBox: { 
-    width: '100%', 
-    height: 300, 
-    backgroundColor: '#eee', 
-    borderRadius: 15, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: 20, 
-    overflow: 'hidden', 
-    borderWidth: 1, 
-    borderColor: '#ccc' 
-  },
+  previewBox: { width: '100%', height: 300, backgroundColor: '#eee', borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginBottom: 20, overflow: 'hidden', borderWidth: 1, borderColor: '#ccc' },
   preview: { width: '100%', height: '100%' },
   inputSection: { width: '100%', marginBottom: 20 },
   label: { fontSize: 14, fontWeight: '600', color: HSE_THEME.primary, marginBottom: 5 },
-  input: { 
-    width: '100%', 
-    backgroundColor: '#fff', 
-    padding: 12, 
-    borderRadius: 10, 
-    borderWidth: 1, 
-    borderColor: '#bbb', 
-    fontSize: 16,
-    color: '#000'
-  },
-  button: { 
-    backgroundColor: HSE_THEME.primary, 
-    padding: 16, 
-    borderRadius: 10, 
-    width: '100%', 
-    alignItems: 'center', 
-    marginBottom: 15 
-  },
+  input: { width: '100%', backgroundColor: '#fff', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#bbb', fontSize: 16, color: '#000' },
+  button: { backgroundColor: HSE_THEME.primary, padding: 16, borderRadius: 10, width: '100%', alignItems: 'center', marginBottom: 15 },
   buttonText: { color: 'white', fontSize: 18, fontWeight: 'bold' }
 });

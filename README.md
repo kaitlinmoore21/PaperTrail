@@ -9,7 +9,7 @@ python -m venv venv
 
 
 # Activate the virtual environment:
-venv\Scripts\Activate.ps1
+.\venv\Scripts\Activate.ps1
 
 
 # Install dependencies:

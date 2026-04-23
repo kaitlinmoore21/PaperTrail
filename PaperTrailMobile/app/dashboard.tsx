@@ -1,12 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HSE_THEME } from '../src/config';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function Dashboard() {
   const router = useRouter();
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const storedRole = await AsyncStorage.getItem('userRole');
+      setRole(storedRole);
+    };
+    fetchUserRole();
+  }, []);
 
   const pickFromGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -31,10 +41,16 @@ export default function Dashboard() {
         <Text style={styles.buttonText}>Existing from Device</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.mainButton, { backgroundColor: '#6c757d' }]} onPress={() => router.push('/processed')}>
-        <Ionicons name="list" size={32} color="white" />
-        <Text style={styles.buttonText}>Previously Processed</Text>
-      </TouchableOpacity>
+      {/* Logic: Only show this button if the user is NOT a secretary */}
+      {role !== 'secretary' && (
+        <TouchableOpacity 
+          style={[styles.mainButton, { backgroundColor: '#6c757d' }]} 
+          onPress={() => router.push('/processed')}
+        >
+          <Ionicons name="list" size={32} color="white" />
+          <Text style={styles.buttonText}>Previously Processed</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
