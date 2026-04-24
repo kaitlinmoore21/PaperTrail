@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  Image, 
-  StyleSheet, 
-  Alert, 
-  ActivityIndicator, 
-  TextInput, 
-  KeyboardAvoidingView, 
-  Platform, 
-  ScrollView 
+  View, Text, TouchableOpacity, Image, StyleSheet, Alert, 
+  ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, ScrollView 
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,32 +9,39 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { API_BASE, HSE_THEME } from '../src/config';
 
 export default function Scan() {
-  const [image, setImage] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [customName, setCustomName] = useState('');
+  // --- STATE (Memory) ---
+  const [image, setImage] = useState<string | null>(null); // Stores the temporary path to the photo
+  const [uploading, setUploading] = useState(false);       // Tracks if the file is currently traveling to the server
+  const [customName, setCustomName] = useState('');        // Stores the file name the user types
   const router = useRouter();
   
+  // This looks for an image passed from the Dashboard (e.g., if picked from Gallery)
   const { externalImage } = useLocalSearchParams(); 
 
+  // If an image was passed from another screen, display it immediately
   useEffect(() => {
     if (externalImage) {
       setImage(externalImage as string);
-      setCustomName(`Upload_${new Date().getTime()}`);
+      setCustomName(`Upload_${new Date().getTime()}`); // Set a temporary unique name
     }
   }, [externalImage]);
 
+  // --- 1. THE CAMERA LOGIC ---
   const launchCamera = async () => {
+    // A. Ask the phone for permission to use the camera
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert("Permission Denied", "Camera access is required to scan documents.");
       return;
     }
 
+    // B. Open the camera interface
     const result = await ImagePicker.launchCameraAsync({
-      quality: 0.8,
-      allowsEditing: true,
+      quality: 0.8,      // 0.8 is a good balance between clarity and small file size
+      allowsEditing: true, // Let the user crop the photo to the edges of the paper
     });
 
+    // C. If the user didn't hit 'Cancel', save the photo path and generate a name
     if (!result.canceled) {
       setImage(result.assets[0].uri);
       const timestamp = new Date().toLocaleDateString().replace(/\//g, '-');
@@ -51,6 +49,7 @@ export default function Scan() {
     }
   };
 
+  // --- 2. THE UPLOAD LOGIC ---
   const uploadToBackend = async () => {
     if (!image) return;
     if (!customName.trim()) {
@@ -58,17 +57,20 @@ export default function Scan() {
       return;
     }
 
-    setUploading(true);
+    setUploading(true); // Start showing the spinner
 
     try {
-      // 1. Get the Token from storage
+      // Step A: Get the Security Token (Digital Badge)
       const token = await AsyncStorage.getItem('userToken');
       
+      // Step B: Create a "FormData" object. Think of this as a digital envelope 
+      // used to send raw files (binary data) over the web.
       const formData = new FormData();
       const uriParts = image.split('.');
-      const fileType = uriParts[uriParts.length - 1];
+      const fileType = uriParts[uriParts.length - 1]; // e.g., 'jpg' or 'png'
       const finalFileName = `${customName.trim()}.${fileType}`;
 
+      // Step C: "Stuff" the image into the envelope
       // @ts-ignore
       formData.append('file', {
         uri: image,
@@ -76,19 +78,19 @@ export default function Scan() {
         type: finalFileName.endsWith('.pdf') ? 'application/pdf' : `image/${fileType}`,
       });
 
-      // 2. Add the Authorization Header
+      // Step D: Send the envelope to the server's /upload/ endpoint
       const response = await fetch(`${API_BASE}/upload/`, {
         method: 'POST',
         body: formData,
         headers: {
           'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`, // THIS FIXES THE 401 ERROR
+          'Authorization': `Bearer ${token}`, // Crucial: Proves who is uploading
         },
       });
 
       if (response.ok) {
         Alert.alert("Success", `"${customName}" has been uploaded.`);
-        router.replace('/dashboard');
+        router.replace('/dashboard'); // Go back to start
       } else {
         const errorData = await response.json();
         Alert.alert("Upload Failed", errorData.detail || "Server error");
@@ -97,11 +99,12 @@ export default function Scan() {
       console.error("Upload Error:", err);
       Alert.alert("Connection Error", "Could not reach the server.");
     } finally {
-      setUploading(false);
+      setUploading(false); // Stop the spinner
     }
   };
 
   return (
+    /* KeyboardAvoidingView prevents the keyboard from covering the input box */
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
       style={{ flex: 1 }}
@@ -109,6 +112,7 @@ export default function Scan() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Secure Capture</Text>
         
+        {/* PREVIEW WINDOW */}
         <View style={styles.previewBox}>
           {image ? (
             <Image source={{ uri: image }} style={styles.preview} resizeMode="contain" />
@@ -117,6 +121,7 @@ export default function Scan() {
           )}
         </View>
 
+        {/* FILE NAMING SECTION (Only visible after a photo is taken) */}
         {image && (
           <View style={styles.inputSection}>
             <Text style={styles.label}>Assign File Name</Text>
@@ -130,6 +135,7 @@ export default function Scan() {
           </View>
         )}
 
+        {/* BUTTONS */}
         <TouchableOpacity style={styles.button} onPress={launchCamera}>
           <Text style={styles.buttonText}>{image ? "Retake Photo" : "Launch Camera"}</Text>
         </TouchableOpacity>
@@ -156,6 +162,7 @@ export default function Scan() {
   );
 }
 
+// --- STYLES ---
 const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: HSE_THEME.background, padding: 20, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 24, fontWeight: 'bold', color: HSE_THEME.primary, marginBottom: 20 },

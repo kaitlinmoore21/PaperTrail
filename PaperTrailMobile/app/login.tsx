@@ -2,31 +2,36 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginUser } from '../src/hooks/useAuth'; 
+import { loginUser } from '../src/hooks/useAuth';
 import { HSE_THEME } from '../src/config';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [employeeNumber, setEmployeeNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!email || !password || !employeeNumber) {
       return Alert.alert("Error", "Please fill in all fields");
     }
 
     setLoading(true);
     try {
-      const response = await loginUser({ email, password });
+      const response = await loginUser({ 
+        email, 
+        password, 
+        employee_number: employeeNumber 
+      });
       
       if (response.status === 200) {
-        // Axios puts the backend response in .data
-        const { access_token, role } = response.data; 
+        const { access_token, role } = response.data;
 
-        // Save the "Key" and the "Role" to the device
+        // --- SAVING USER DATA TO STORAGE ---
         await AsyncStorage.setItem('userToken', access_token);
         await AsyncStorage.setItem('userRole', role);
+        await AsyncStorage.setItem('userEmail', email); // This line ensures the email follows the user to the Dashboard
 
         Alert.alert("Success", `Welcome back! Logged in as ${role}`);
         router.push('/dashboard'); 
@@ -46,8 +51,8 @@ export default function Login() {
       <Text style={styles.subtitle}>Enter your Employee credentials to continue</Text>
 
       <TextInput 
-        placeholder="Employee Email Address" 
-        style={styles.input} 
+        placeholder="Employee Email Address"
+        style={styles.input}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -55,15 +60,24 @@ export default function Login() {
       />
 
       <TextInput 
-        placeholder="Password" 
-        style={styles.input} 
-        secureTextEntry 
+        placeholder="Password"
+        style={styles.input}
+        secureTextEntry
         value={password}
         onChangeText={setPassword}
       />
 
+      <TextInput 
+        placeholder="Employee Number"
+        style={styles.input}
+        value={employeeNumber}
+        onChangeText={setEmployeeNumber}
+        autoCapitalize="none"
+        keyboardType="default"
+      />
+
       <TouchableOpacity 
-        style={[styles.button, loading && { opacity: 0.7 }]} 
+        style={[styles.button, loading && { opacity: 0.7 }]}
         onPress={handleLogin}
         disabled={loading}
       >

@@ -7,7 +7,6 @@ cd "C:\Users\kkmoo\OneDrive - National College of Ireland\YEAR4\Final Project\Pa
 # Create a virtual environment:
 python -m venv venv
 
-
 # Activate the virtual environment:
 .\venv\Scripts\Activate.ps1
 

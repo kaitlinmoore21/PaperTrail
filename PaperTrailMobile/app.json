@@ -1,19 +1,25 @@
 {
  "expo": {
-    "name": "PaperTrail",
-    "slug": "PaperTrail",
-    "scheme": "papertrail", 
-    "version": "1.0.0",
+    "name": "PaperTrail",    // The name that appears under the icon on the phone's home screen
+    "slug": "PaperTrail",    // The URL-friendly name used by the Expo publishing system
+    "scheme": "papertrail",  // Allows other apps to "link" to your app (e.g., papertrail://open)
+    "version": "1.0.0",      // The current version (increment this to 1.0.1 for updates)
+    
+    // --- PLUGINS & PERMISSIONS ---
+    // This section is the most important for security and functionality.
     "plugins": [
       [
-        "expo-camera",
+        "expo-camera",       // Enables the phone's physical camera hardware
         {
+          // The "Purpose String": This is the message the user sees in the 
+          // popup asking them to click "Allow."
           "cameraPermission": "Allow PaperTrail to access your camera to scan documents."
         }
       ],
       [
-        "expo-image-picker",
+        "expo-image-picker", // Enables access to the phone's saved photo gallery
         {
+          // This message explains why you need to look at their private photos.
           "photosPermission": "Allow PaperTrail to access your photos to upload documents."
         }
       ]

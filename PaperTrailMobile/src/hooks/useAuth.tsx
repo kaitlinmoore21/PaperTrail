@@ -1,17 +1,21 @@
-import axios from 'axios';
-import { API_BASE } from '../config';
+import axios from 'axios'; // Imports the tool used to send data over the internet
+import { API_BASE } from '../config'; // Gets the home address of your server (e.g., http://localhost:8000)
 
+// Defines the "Guest List" - exactly what info we need from a user
 type AuthParams = {
-  email: string;
-  password: string;
+  email: string; // Every user must provide a text-based email
+  password: string; // Every user must provide a text-based password
+  employee_number: string; // Every user must provide their unique ID number
 };
 
-// We use axios directly here to ensure the response structure is predictable
-export const signupUser = async ({ email, password }: AuthParams) => {
-  return await axios.post(`${API_BASE}/signup/`, { email, password });
+// This function handles the "Create Account" process
+export const signupUser = async ({ email, password, employee_number }: AuthParams) => {
+  // It sends the email, password, and ID to the server's /signup/ folder and waits for a reply
+  return await axios.post(`${API_BASE}/signup/`, { email, password, employee_number });
 };
 
-export const loginUser = async ({ email, password }: AuthParams) => {
-  // Returns the full axios response including .data (where the token is) and .status
-  return await axios.post(`${API_BASE}/login/`, { email, password });
+// This function handles the "Sign In" process
+export const loginUser = async ({ email, password, employee_number }: AuthParams) => {
+  // It sends the credentials to the server's /login/ folder to see if they match the records
+  return await axios.post(`${API_BASE}/login/`, { email, password, employee_number });
 };
