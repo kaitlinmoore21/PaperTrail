@@ -15,7 +15,11 @@ import textract # Imports a universal tool to pull text from many different file
 from dotenv import load_dotenv # Imports the tool that reads your secret .env file
 from urllib.parse import unquote # Imports a tool to clean up messy filenames with spaces or symbols
 from sqlalchemy.orm import Session # Imports the connection to your database
-from jose import jwt, JWTError # Imports the tool to lock and unlock "Digital ID badges" (Tokens)
+
+# CHANGED: Switched from 'jose' to 'PyJWT' to match auth.py and fix the 401 errors
+import jwt
+from jwt.exceptions import InvalidTokenError as JWTError 
+
 from database import SessionLocal, init_db # Imports your database setup
 from models import Document, User # Imports your data blueprints (Users and Documents)
 from utils_pdf import generate_pdf_bytes, encrypt_and_save_pdf, decrypt_pdf_bytes_from_path # Imports your PDF security tools
@@ -73,9 +77,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
     )
     try:
         # Tries to unlock the "Digital ID badge" using your secret master key
+        # CHANGED: Explicitly using PyJWT to decode
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub") # Extracts the user's email from the badge
         if email is None: raise credentials_exception
@@ -160,10 +166,11 @@ async def upload_and_process(
     doc_type = ai_out.get("doc_type", "other")
     
     # --- PDF GENERATION & SECURITY ---
-    metadata = {"filename": filename, "doc_type": doc_type, "created_at": datetime.utcnow().isoformat()}
+    # CHANGED: Using .now() instead of .utcnow() to fix warnings
+    metadata = {"filename": filename, "doc_type": doc_type, "created_at": datetime.now().isoformat()}
     pdf_bytes = generate_pdf_bytes(metadata, raw_text, ai_out) # Creates a clean PDF with the AI's findings
     
-    file_id = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uid}.pdf" # Creates a unique filename
+    file_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uid}.pdf" # Creates a unique filename
     full_save_path = str((ENCRYPTED_DIR / file_id).absolute()) 
     encrypted_path = encrypt_and_save_pdf(pdf_bytes, full_save_path) # Encrypts the file so it's unreadable without a key
 

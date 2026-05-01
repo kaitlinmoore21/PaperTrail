@@ -22,7 +22,7 @@ pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")  # Configures how 
 router = APIRouter(tags=["auth"])  # Groups all these security paths under the "Auth" label
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")  # Defines where the login "booth" is located
 
-SECRET_KEY = os.getenv("SECRET_KEY", "hc-paper-trail-99-key")  # A secret "master key" used to sign ID badges
+SECRET_KEY = "paper-trail-super-long-secure-key-32-chars-minimum" # A secret "master key" used to sign ID badges
 ALGORITHM = "HS256"  # The math formula used to create the digital signatures
 ACCESS_TOKEN_EXPIRE_MINUTES = 600  # Sets how long a user stays logged in (10 hours)
 
