@@ -12,7 +12,7 @@ python -m venv venv
 
 
 # Install dependencies:
-pip install -r requirements.txt
+pip install -r requirements.txt 
 
 
 # Run the server:
