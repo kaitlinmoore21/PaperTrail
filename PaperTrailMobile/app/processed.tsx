@@ -59,7 +59,7 @@ export default function ProcessedDocs() {
     return isNaN(date.getTime()) ? dateString.split('T')[0] : date.toLocaleDateString();
   };
 
-  // --- THE SEARCH FILTER (Live Results) ---
+  // THE SEARCH FILTER 
   // This creates a smaller list of documents that match what the user is typing
   const filteredDocs = docs.filter(d => 
     d.filename?.toLowerCase().includes(search.toLowerCase())
@@ -67,7 +67,7 @@ export default function ProcessedDocs() {
 
   return (
     <View style={styles.container}>
-      {/* --- HEADER SECTION --- */}
+      {/* HEADER SECTION */}
       <View style={styles.header}>
         {/* Back Button: Sends the user back to the Dashboard */}
         <TouchableOpacity onPress={() => router.back()}>
@@ -76,7 +76,7 @@ export default function ProcessedDocs() {
         <Text style={styles.title}>Archive</Text>
       </View>
 
-      {/* --- SEARCH BAR --- */}
+      {/* SEARCH BAR */}
       <TextInput 
         style={styles.searchBar}
         placeholder="Search (e.g., Blood Test)"
@@ -85,7 +85,7 @@ export default function ProcessedDocs() {
         placeholderTextColor="#999"
       />
 
-      {/* --- MAIN CONTENT AREA --- */}
+      {/* MAIN CONTENT AREA*/}
       {loading ? (
         // If still loading, show a spinning circle
         <ActivityIndicator size="large" color={HSE_THEME.primary} />
@@ -114,7 +114,7 @@ export default function ProcessedDocs() {
   );
 }
 
-// --- STYLING (The "CSS" for the App) ---
+// STYLING (The "CSS" for the App)
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
   header: { flexDirection: 'row', alignItems: 'center', marginTop: 40, marginBottom: 20 },
