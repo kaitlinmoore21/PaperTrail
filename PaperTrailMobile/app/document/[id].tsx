@@ -38,7 +38,7 @@ export default function DocumentDetail() {
 
   return (
     <View style={styles.container}> 
-      {/* --- LOCK SCREEN --- */}
+      {/* LOCK SCREEN  */}
       {!isUnlocked ? (
         // This part only shows if the document is still locked
         <View style={styles.center}>
@@ -56,7 +56,7 @@ export default function DocumentDetail() {
           </TouchableOpacity>
         </View>
       ) : (
-        // --- SUCCESS SCREEN ---
+        //  SUCCESS SCREEN 
         // This part shows only after the correct password is entered
         <View style={styles.center}>
           <Text style={styles.successTitle}>Access Granted</Text>
@@ -69,7 +69,7 @@ export default function DocumentDetail() {
          </View>
       )}
 
-      {/* --- CONTENT POPUP (MODAL) --- */}
+      {/* CONTENT POPUP (MODAL)  */}
       <Modal visible={viewVisible} animationType="slide">
         <View style={styles.modalContent}>
           {/* Header of the popup */}
