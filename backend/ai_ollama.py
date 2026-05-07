@@ -31,7 +31,7 @@ def ai_extract_and_classify(text: str):
     """
     Classifies the document and dynamically extracts ALL critical information.
     """
-    # --- STEP 1: CLASSIFY (What kind of paper is this?) ---
+    # CLASSIFY (What kind of paper is this?) 
     classify_prompt = (
         f"Classify this text into ONLY ONE word: invoice, receipt, prescription, "
         f"statement, document, id_card, or other. Respond with JUST the word. TEXT: {text}"
@@ -46,7 +46,7 @@ def ai_extract_and_classify(text: str):
             doc_type = cat # Updates the document type to the correct category
             break
     
-    # --- STEP 2: DYNAMIC EXTRACTION (Find the details) ---
+    # DYNAMIC EXTRACTION (Find the details) 
     extract_prompt = f"""
     Act as an expert data extractor. Identify and extract EVERY important detail from the text below.
     
