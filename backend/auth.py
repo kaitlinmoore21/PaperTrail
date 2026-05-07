@@ -11,7 +11,7 @@ import jwt  # Imports the tool to create "digital ID badges" (tokens)
 from passlib.context import CryptContext  # Imports another layer of password security
 from fastapi.security import OAuth2PasswordBearer  # Imports the standard way to handle logins online
 
-# --- BCRYPT HACK ---
+# BCRYPT HACK 
 # This part fixes a small technical glitch in some versions of the bcrypt library
 if not hasattr(bcrypt, "__about__"):
     class About:
@@ -26,7 +26,7 @@ SECRET_KEY = "paper-trail-super-long-secure-key-32-chars-minimum" # A secret "ma
 ALGORITHM = "HS256"  # The math formula used to create the digital signatures
 ACCESS_TOKEN_EXPIRE_MINUTES = 600  # Sets how long a user stays logged in (10 hours)
 
-# --- ROLE LOGIC ---
+# ROLE LOGIC 
 # This logic looks at an email address and decides if the user is a doctor, nurse, or admin
 def get_role_from_email(email: str) -> str:
     email = email.lower()  # Converts email to lowercase so it's not case-sensitive
@@ -81,7 +81,7 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire, "iat": datetime.utcnow()})  # Adds "expires at" and "created at" timestamps
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)  # Signs the badge with the master key
 
-# --- THE SIGNUP DOOR ---
+# THE SIGNUP DOOR 
 @router.post("/signup/")
 def signup(req: SignupRequest, db: Session = Depends(get_db)):
     # Check if someone is already using that email
@@ -104,7 +104,7 @@ def signup(req: SignupRequest, db: Session = Depends(get_db)):
     db.refresh(user) # Refresh the data to get the new ID number assigned by the database
     return {"id": user.id, "email": user.email, "role": user.role, "status": "created"} # Tell the user it worked
 
-# --- THE LOGIN DOOR ---
+# THE LOGIN DOOR 
 @router.post("/login/", response_model=TokenResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     # Find the user in the database by their email
