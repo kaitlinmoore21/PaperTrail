@@ -1,16 +1,16 @@
-# --- System Files ---
+# System Files 
 .DS_Store
 Thumbs.db
 *.log
 
-# --- Logic/App Code (JavaScript/TypeScript) ---
+# Logic/App Code (JavaScript/TypeScript)
 node_modules/
 .npm/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
-# --- Expo & React Native ---
+# Expo & React Native 
 .expo/
 dist/
 web-build/
@@ -23,7 +23,7 @@ path/to/your/app/ios/
 *.key
 *.mobileprovision
 
-# --- Backend (Python) ---
+# Backend (Python) 
 __pycache__/
 *.py[cod]
 *$py.class
@@ -34,7 +34,7 @@ ENV/
 backend/venv/
 backend/.env
 
-# --- Databases & Storage ---
+# Databases & Storage 
 *.db
 *.sqlite
 storage/
@@ -42,13 +42,13 @@ uploads/
 backend/storage/
 backend/uploads/
 
-# --- Editor / IDE ---
+# Editor / IDE 
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# --- Misc ---
+# Misc 
 Test Files/
 .bin/
 assets/bin/
