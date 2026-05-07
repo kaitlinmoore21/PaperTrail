@@ -10,7 +10,7 @@ from dotenv import load_dotenv # Imports the tool to read your secret keys from 
 # Load settings from your .env file
 load_dotenv()
 
-# --- DYNAMIC PATH SETUP ---
+# DYNAMIC PATH SETUP 
 # This finds exactly where this script is sitting on your computer
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # This creates a path for a folder called "storage" inside your project
