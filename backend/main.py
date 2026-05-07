@@ -16,7 +16,7 @@ from dotenv import load_dotenv # Imports the tool that reads your secret .env fi
 from urllib.parse import unquote # Imports a tool to clean up messy filenames with spaces or symbols
 from sqlalchemy.orm import Session # Imports the connection to your database
 
-# CHANGED: Switched from 'jose' to 'PyJWT' to match auth.py and fix the 401 errors
+
 import jwt
 from jwt.exceptions import InvalidTokenError as JWTError 
 
@@ -26,20 +26,20 @@ from utils_pdf import generate_pdf_bytes, encrypt_and_save_pdf, decrypt_pdf_byte
 from ai_ollama import ai_extract_and_classify # Imports your AI "Brain" function
 from auth import router as auth_router, SECRET_KEY, ALGORITHM # Imports your login system and secret keys
 
-load_dotenv() # Reads your .env file to get your secret passwords and settings
+load_dotenv() # Reads .env file to get your secret passwords and settings
 
-# --- SECURITY CONFIG ---
+# SECURITY CONFIG 
 # This defines the "Login Booth" address where the mobile app gets its digital ID badge
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-# --- TESSERACT CONFIG ---
+# TESSERACT CONFIG
 # Tells the app where the OCR scanning software is installed on the computer
 TESSERACT_CMD = os.getenv("TESSERACT_CMD")
 if TESSERACT_CMD:
     pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
-# --- STORAGE CONFIG ---
-# Creates folders on your computer to store uploaded files and the final encrypted versions
+# STORAGE CONFIG 
+# Creates folders on computer to store uploaded files and the final encrypted versions
 UPLOAD_DIR = Path("C:/PaperTrail/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True) # Creates the "uploads" folder if it doesn't exist
 ENCRYPTED_DIR = Path("C:/PaperTrail/storage") 
@@ -62,7 +62,7 @@ app.include_router(auth_router) # Plugs in the Login/Signup logic from your auth
 class PasswordRequest(BaseModel):
     password: str
 
-# --- DEPENDENCIES & SECURITY GUARDS ---
+# DEPENDENCIES & SECURITY GUARDS 
 
 # Opens a temporary conversation with the database
 def get_db():
@@ -81,7 +81,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     )
     try:
         # Tries to unlock the "Digital ID badge" using your secret master key
-        # CHANGED: Explicitly using PyJWT to decode
+        # using PyJWT to decode
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub") # Extracts the user's email from the badge
         if email is None: raise credentials_exception
@@ -105,7 +105,7 @@ def require_roles(allowed_roles: List[str]):
         return current_user
     return role_checker
 
-# --- OCR HELPERS (The Scanners) ---
+# OCR HELPERS (The Scanners)
 
 # Reads text from Word documents (.docx)
 def fast_extract_docx(contents: bytes) -> str | None:
@@ -129,7 +129,7 @@ def ocr_from_pdf_path(pdf_path: str) -> str:
 def root():
     return {"message": "PaperTrail API Running"} # A simple "I'm alive" message for testing
 
-# --- DOCUMENT ROUTES (The Main Actions) ---
+# DOCUMENT ROUTES (The Main Actions) 
 
 # 1. UPLOAD: The door where documents enter the system
 @app.post("/upload/")
@@ -161,11 +161,11 @@ async def upload_and_process(
     finally:
         if os.path.exists(temp_path): os.unlink(temp_path) # Deletes the temporary unencrypted file
 
-    # --- AI STEP ---
+    # AI STEP 
     ai_out = ai_extract_and_classify(raw_text) # Asks the AI "Brain" to find facts and classify the doc
     doc_type = ai_out.get("doc_type", "other")
     
-    # --- PDF GENERATION & SECURITY ---
+    # PDF GENERATION & SECURITY 
     # CHANGED: Using .now() instead of .utcnow() to fix warnings
     metadata = {"filename": filename, "doc_type": doc_type, "created_at": datetime.now().isoformat()}
     pdf_bytes = generate_pdf_bytes(metadata, raw_text, ai_out) # Creates a clean PDF with the AI's findings
@@ -174,7 +174,7 @@ async def upload_and_process(
     full_save_path = str((ENCRYPTED_DIR / file_id).absolute()) 
     encrypted_path = encrypt_and_save_pdf(pdf_bytes, full_save_path) # Encrypts the file so it's unreadable without a key
 
-    # --- DATABASE RECORD ---
+    # DATABASE RECORD 
     doc = Document(
         filename=filename, 
         doc_type=doc_type, 
