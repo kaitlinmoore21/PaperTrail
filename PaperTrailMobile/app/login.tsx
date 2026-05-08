@@ -28,7 +28,7 @@ export default function Login() {
       if (response.status === 200) {
         const { access_token, role } = response.data;
 
-        // --- SAVING USER DATA TO STORAGE ---
+        //  SAVING USER DATA TO STORAGE 
         await AsyncStorage.setItem('userToken', access_token);
         await AsyncStorage.setItem('userRole', role);
         await AsyncStorage.setItem('userEmail', email); // This line ensures the email follows the user to the Dashboard
