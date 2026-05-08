@@ -9,7 +9,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { API_BASE, HSE_THEME } from '../src/config';
 
 export default function Scan() {
-  // --- STATE (Memory) ---
+  // STATE (Memory) 
   const [image, setImage] = useState<string | null>(null); // Stores the temporary path to the photo
   const [uploading, setUploading] = useState(false);       // Tracks if the file is currently traveling to the server
   const [customName, setCustomName] = useState('');        // Stores the file name the user types
@@ -26,7 +26,7 @@ export default function Scan() {
     }
   }, [externalImage]);
 
-  // --- 1. THE CAMERA LOGIC ---
+  // THE CAMERA LOGIC 
   const launchCamera = async () => {
     // A. Ask the phone for permission to use the camera
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -49,7 +49,7 @@ export default function Scan() {
     }
   };
 
-  // --- 2. THE UPLOAD LOGIC ---
+  // THE UPLOAD LOGIC 
   const uploadToBackend = async () => {
     if (!image) return;
     if (!customName.trim()) {
@@ -162,7 +162,7 @@ export default function Scan() {
   );
 }
 
-// --- STYLES ---
+// STYLES 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: HSE_THEME.background, padding: 20, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 24, fontWeight: 'bold', color: HSE_THEME.primary, marginBottom: 20 },
