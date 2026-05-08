@@ -8,7 +8,7 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* --- TOP SECTION: Logo and Branding --- */}
+      {/* TOP SECTION: Logo and Branding  */}
       <View style={styles.logoContainer}>
         {/* The main title of the app */}
         <Text style={styles.logoText}>PaperTrail</Text>
@@ -16,7 +16,7 @@ export default function WelcomeScreen() {
         <Text style={styles.tagline}>AI-Powered Document Automation</Text>
       </View>
 
-      {/* --- BOTTOM SECTION: Action Buttons --- */}
+      {/*  BOTTOM SECTION: Action Buttons */}
       <View style={styles.buttonContainer}>
         
         {/* LOGIN BUTTON: A solid colored button */}
