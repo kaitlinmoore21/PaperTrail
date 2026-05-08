@@ -15,13 +15,13 @@ interface DocumentItem {
 }
 
 export default function ProcessedDocs() {
-  // --- STATE (App Memory) ---
+  //  (App Memory)
   const [docs, setDocs] = useState<DocumentItem[]>([]); // Holds the full list of documents
   const [search, setSearch] = useState('');            // Holds the text currently in the search bar
   const [loading, setLoading] = useState(true);        // A switch to show/hide the loading spinner
   const router = useRouter();                          // The tool to navigate between screens
 
-  // --- THE FETCH FUNCTION (Talking to the Server) ---
+  // THE FETCH FUNCTION (Talking to the Server) 
   const fetchDocs = async () => {
     try {
       // Step A: Grab the user's login token (badge) from the phone's storage
@@ -51,7 +51,7 @@ export default function ProcessedDocs() {
   // Step D: Run the fetch function exactly once as soon as this screen opens
   useEffect(() => { fetchDocs(); }, []);
 
-  // --- THE DATE FORMATTER (Human-Friendly Text) ---
+  // THE DATE FORMATTER (Human-Friendly Text) 
   const formatDate = (dateString: string) => {
     if (!dateString) return "No Date";
     const date = new Date(dateString);
