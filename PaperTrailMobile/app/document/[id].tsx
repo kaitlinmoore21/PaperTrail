@@ -42,7 +42,7 @@ export default function DocumentDetail() {
       {!isUnlocked ? (
         // This part only shows if the document is still locked
         <View style={styles.center}>
-          <Text style={styles.lockIcon}>🔒</Text> 
+          <Text style={styles.lockIcon}></Text> 
           <Text style={styles.title}>Document Protected</Text>
           <TextInput 
             secureTextEntry // Hides the password letters as you type
