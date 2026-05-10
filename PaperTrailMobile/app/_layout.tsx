@@ -4,7 +4,11 @@ import { HSE_THEME } from '../src/config'; // Imports your official brand colors
 export default function Layout() {
   return (
     <Stack
+<<<<<<< HEAD
       // GLOBAL SETTINGS (Applies to all screens) 
+=======
+      //  GLOBAL SETTINGS (Applies to all screens) 
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
       screenOptions={{
         headerStyle: { backgroundColor: HSE_THEME.primary }, // Sets the top bar to your brand's primary color
         headerTintColor: '#fff', // Makes the back button and icons white
@@ -12,7 +16,11 @@ export default function Layout() {
         headerTitle: "PaperTrail", // The default text shown at the top of the app
       }}
     >
+<<<<<<< HEAD
       {/* INDIVIDUAL SCREEN RULES  */}
+=======
+      {/* INDIVIDUAL SCREEN RULES */}
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
       
       {/* 1. Landing Page: Hides the header completely for a clean look */}
       <Stack.Screen name="index" options={{ headerShown: false }} /> 

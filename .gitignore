@@ -1,16 +1,28 @@
+<<<<<<< HEAD
 # System Files 
+=======
+# System Files
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
 .DS_Store
 Thumbs.db
 *.log
 
+<<<<<<< HEAD
 # Logic/App Code (JavaScript/TypeScript)
+=======
+#  Logic/App Code (JavaScript/TypeScript)
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
 node_modules/
 .npm/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
+<<<<<<< HEAD
 # Expo & React Native 
+=======
+#  Expo & React Native 
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
 .expo/
 dist/
 web-build/
@@ -23,7 +35,11 @@ path/to/your/app/ios/
 *.key
 *.mobileprovision
 
+<<<<<<< HEAD
 # Backend (Python) 
+=======
+#  Backend (Python) 
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
 __pycache__/
 *.py[cod]
 *$py.class
@@ -48,7 +64,11 @@ backend/uploads/
 *.swp
 *.swo
 
+<<<<<<< HEAD
 # Misc 
+=======
+#  Misc 
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
 Test Files/
 .bin/
 assets/bin/

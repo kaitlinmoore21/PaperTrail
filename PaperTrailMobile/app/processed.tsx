@@ -15,7 +15,11 @@ interface DocumentItem {
 }
 
 export default function ProcessedDocs() {
+<<<<<<< HEAD
   //  (App Memory)
+=======
+  // STATE (App Memory) 
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
   const [docs, setDocs] = useState<DocumentItem[]>([]); // Holds the full list of documents
   const [search, setSearch] = useState('');            // Holds the text currently in the search bar
   const [loading, setLoading] = useState(true);        // A switch to show/hide the loading spinner

@@ -8,7 +8,11 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.container}>
+<<<<<<< HEAD
       {/* TOP SECTION: Logo and Branding  */}
+=======
+      {/* TOP SECTION: Logo and Branding */}
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
       <View style={styles.logoContainer}>
         {/* The main title of the app */}
         <Text style={styles.logoText}>PaperTrail</Text>

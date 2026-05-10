@@ -1,3 +1,5 @@
+from pydoc import text
+
 import requests # Imports the tool to send data to other programs (Ollama)
 import json # Imports the tool to handle data formatted like a list or dictionary
 import re # Imports a tool for searching through text (not used here, but good for cleanup)
@@ -31,7 +33,11 @@ def ai_extract_and_classify(text: str):
     """
     Classifies the document and dynamically extracts ALL critical information.
     """
+<<<<<<< HEAD
     # CLASSIFY (What kind of paper is this?) 
+=======
+    # STEP 1: CLASSIFY (What kind of paper is this?) 
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
     classify_prompt = (
         f"Classify this text into ONLY ONE word: invoice, receipt, prescription, "
         f"statement, document, id_card, or other. Respond with JUST the word. TEXT: {text}"
@@ -46,19 +52,32 @@ def ai_extract_and_classify(text: str):
             doc_type = cat # Updates the document type to the correct category
             break
     
+<<<<<<< HEAD
     # DYNAMIC EXTRACTION (Find the details) 
+=======
+    # STEP 2: DYNAMIC EXTRACTION (Find the details) 
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
     extract_prompt = f"""
     Act as an expert data extractor. Identify and extract EVERY important detail from the text below.
     
     Guidelines:
-    - Do not use a fixed template. Extract License Numbers, Dates, Amounts, Addresses, or Instructions.
-    - Use clear, descriptive keys in snake_case (e.g., "license_class", "issuing_authority").
-    - Include a "summary" key describing the document in one sentence.
-    - Respond ONLY with a raw JSON object. No markdown, no conversational text.
+    - **Document Classification**: Always include a "document_type" key (e.g., invoice, prescription, id_card, lab_report).
+    - **Data Points**: Specifically look for and extract:
+        * Names (People, Providers, or Issuing Authorities)
+        * Building/Facility names (e.g., "General Hospital", "Suite 4B")
+        * Physical Addresses, Phone Numbers, and Emails
+        * Dates (DOB, Expiry, Issue Date, Service Date)
+        * Medical Data (Medication names, Dosages, and Instructions)
+        * Clinical Data (Test results, Findings, or Measurements)
+        * Financial Data (Prices, Totals, Taxes, and Currency)
+    - **Structure**: Use clear, descriptive keys in snake_case (e.g., "building_name", "dosage_instruction").
+    - **Completeness**: If multiple items exist (like multiple prices or medications), use an ARRAY [].
+    - **Summary**: Include a "summary" key describing the document in one sentence.
+    - **Formatting**: Respond ONLY with a raw JSON object. No markdown, no conversational text.
 
-    TEXT TO ANALYZE:
-    {text}
-    """
+    ### TEXT TO ANALYZE:
+{text}
+"""
 
     raw_response = ollama_prompt(extract_prompt) # Sends the text to the AI to find facts
 

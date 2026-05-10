@@ -38,7 +38,11 @@ export default function DocumentDetail() {
 
   return (
     <View style={styles.container}> 
+<<<<<<< HEAD
       {/* LOCK SCREEN  */}
+=======
+      {/*  LOCK SCREEN */}
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
       {!isUnlocked ? (
         // This part only shows if the document is still locked
         <View style={styles.center}>
@@ -56,7 +60,11 @@ export default function DocumentDetail() {
           </TouchableOpacity>
         </View>
       ) : (
+<<<<<<< HEAD
         //  SUCCESS SCREEN 
+=======
+        // SUCCESS SCREEN 
+>>>>>>> c5a3a70 (Improving AI Extractions and Comments)
         // This part shows only after the correct password is entered
         <View style={styles.center}>
           <Text style={styles.successTitle}>Access Granted</Text>
