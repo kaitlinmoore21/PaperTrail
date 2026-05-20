@@ -5,11 +5,7 @@
     "scheme": "papertrail",  // Allows other apps to "link" to your app (e.g., papertrail://open)
     "version": "1.0.0",      // The current version (increment this to 1.0.1 for updates)
     
-<<<<<<< HEAD
-    // PLUGINS & PERMISSIONS 
-=======
     // PLUGINS & PERMISSIONS
->>>>>>> c5a3a70 (Improving AI Extractions and Comments)
     // This section is the most important for security and functionality.
     "plugins": [
       [

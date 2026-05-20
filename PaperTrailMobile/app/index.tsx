@@ -8,16 +8,12 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.container}>
-<<<<<<< HEAD
-      {/* TOP SECTION: Logo and Branding  */}
-=======
       {/* TOP SECTION: Logo and Branding */}
->>>>>>> c5a3a70 (Improving AI Extractions and Comments)
       <View style={styles.logoContainer}>
         {/* The main title of the app */}
         <Text style={styles.logoText}>PaperTrail</Text>
         {/* A small subtitle explaining what the app does */}
-        <Text style={styles.tagline}>AI-Powered Document Automation</Text>
+        <Text style={styles.tagline}>Document Automation Application </Text>
       </View>
 
       {/*  BOTTOM SECTION: Action Buttons */}

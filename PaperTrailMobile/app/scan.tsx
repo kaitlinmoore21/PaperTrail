@@ -26,11 +26,9 @@ export default function Scan() {
     }
   }, [externalImage]);
 
-<<<<<<< HEAD
-  // THE CAMERA LOGIC 
-=======
+
+  
   //  1. THE CAMERA LOGIC 
->>>>>>> c5a3a70 (Improving AI Extractions and Comments)
   const launchCamera = async () => {
     // A. Ask the phone for permission to use the camera
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -53,11 +51,7 @@ export default function Scan() {
     }
   };
 
-<<<<<<< HEAD
-  // THE UPLOAD LOGIC 
-=======
   //  2. THE UPLOAD LOGIC 
->>>>>>> c5a3a70 (Improving AI Extractions and Comments)
   const uploadToBackend = async () => {
     if (!image) return;
     if (!customName.trim()) {
@@ -170,11 +164,7 @@ export default function Scan() {
   );
 }
 
-<<<<<<< HEAD
-// STYLES 
-=======
 //  STYLES 
->>>>>>> c5a3a70 (Improving AI Extractions and Comments)
 const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: HSE_THEME.background, padding: 20, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 24, fontWeight: 'bold', color: HSE_THEME.primary, marginBottom: 20 },
