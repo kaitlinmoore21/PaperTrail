@@ -28,31 +28,18 @@ from auth import router as auth_router, SECRET_KEY, ALGORITHM # Imports your log
 
 load_dotenv() # Reads .env file to get your secret passwords and settings
 
-<<<<<<< HEAD
-# SECURITY CONFIG 
-# This defines the "Login Booth" address where the mobile app gets its digital ID badge
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
-
-# TESSERACT CONFIG
-=======
 #  SECURITY CONFIG 
 # This defines the "Login Booth" address where the mobile app gets its digital ID badge
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 #  TESSERACT CONFIG 
->>>>>>> c5a3a70 (Improving AI Extractions and Comments)
 # Tells the app where the OCR scanning software is installed on the computer
 TESSERACT_CMD = os.getenv("TESSERACT_CMD")
 if TESSERACT_CMD:
     pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
-<<<<<<< HEAD
-# STORAGE CONFIG 
-# Creates folders on computer to store uploaded files and the final encrypted versions
-=======
 #  STORAGE CONFIG 
 # Creates folders on your computer to store uploaded files and the final encrypted versions
->>>>>>> c5a3a70 (Improving AI Extractions and Comments)
 UPLOAD_DIR = Path("C:/PaperTrail/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True) # Creates the "uploads" folder if it doesn't exist
 ENCRYPTED_DIR = Path("C:/PaperTrail/storage") 
@@ -118,11 +105,7 @@ def require_roles(allowed_roles: List[str]):
         return current_user
     return role_checker
 
-<<<<<<< HEAD
-# OCR HELPERS (The Scanners)
-=======
 # OCR HELPERS (The Scanners) 
->>>>>>> c5a3a70 (Improving AI Extractions and Comments)
 
 # Reads text from Word documents (.docx)
 def fast_extract_docx(contents: bytes) -> str | None:
@@ -182,12 +165,7 @@ async def upload_and_process(
     ai_out = ai_extract_and_classify(raw_text) # Asks the AI "Brain" to find facts and classify the doc
     doc_type = ai_out.get("doc_type", "other")
     
-<<<<<<< HEAD
-    # PDF GENERATION & SECURITY 
-=======
     # PDF GENERATION & SECURITY
->>>>>>> c5a3a70 (Improving AI Extractions and Comments)
-    # CHANGED: Using .now() instead of .utcnow() to fix warnings
     metadata = {"filename": filename, "doc_type": doc_type, "created_at": datetime.now().isoformat()}
     pdf_bytes = generate_pdf_bytes(metadata, raw_text, ai_out) # Creates a clean PDF with the AI's findings
     

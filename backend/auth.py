@@ -81,11 +81,7 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire, "iat": datetime.utcnow()})  # Adds "expires at" and "created at" timestamps
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)  # Signs the badge with the master key
 
-<<<<<<< HEAD
-# THE SIGNUP DOOR 
-=======
 #  THE SIGNUP DOOR 
->>>>>>> c5a3a70 (Improving AI Extractions and Comments)
 @router.post("/signup/")
 def signup(req: SignupRequest, db: Session = Depends(get_db)):
     # Check if someone is already using that email
