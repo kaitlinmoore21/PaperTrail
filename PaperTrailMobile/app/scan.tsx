@@ -157,7 +157,7 @@ export default function Scan() {
         )}
 
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ color: HSE_THEME.primary, marginTop: 10, paddingBottom: 40 }}>Cancel</Text>
+          <Text style={{ color: HSE_THEME.primary, marginTop: 10, paddingBottom: 40 }}>Cancel </Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
